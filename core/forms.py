@@ -13,6 +13,9 @@ class ReceiptForm(forms.ModelForm):
             'invoice_date': DateInput(),
             'departure_date': DateInput(),
             'return_date': DateInput(),
+            
+            # ADD THIS LINE: Make invoice number read-only
+            'invoice_number': forms.TextInput(attrs={'readonly': 'readonly', 'style': 'background-color: #e2e8f0;'}),
         }
 
 # Inline Formsets

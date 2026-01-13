@@ -3,6 +3,24 @@ from django.contrib.auth.decorators import login_required
 from .models import Receipt
 from .forms import ReceiptForm, PassengerFormSet, ItemFormSet
 
+import random
+import string
+# ... keep your existing imports ...
+
+# HELPER FUNCTION: Generates the ID
+def generate_invoice_id():
+    # 1. Get the next Serial Number
+    # We count all receipts and add 1. 
+    # If you delete receipts, this might reuse numbers, but for internal use it's fine.
+    next_id = Receipt.objects.count() + 1
+    
+    # 2. Generate Random 4-character string (Uppercase + Digits)
+    # e.g., 'X7K9'
+    random_part = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    
+    # 3. Format: #RANDOM-SERIAL (e.g. #X7K9-001)
+    return f"#{random_part}-{next_id:03d}"
+
 @login_required
 def receipt_create(request):
     if request.method == 'POST':
@@ -11,20 +29,23 @@ def receipt_create(request):
         item_formset = ItemFormSet(request.POST)
 
         if form.is_valid() and passenger_formset.is_valid() and item_formset.is_valid():
-            # 1. Save Parent (Receipt)
             receipt = form.save()
             
-            # 2. Link Children to Parent and Save
             passenger_formset.instance = receipt
             passenger_formset.save()
             
             item_formset.instance = receipt
             item_formset.save()
             
-            # 3. Redirect to the detail page we made in Phase 4
             return redirect('receipt_detail', pk=receipt.pk)
     else:
-        form = ReceiptForm()
+        # --- THIS IS THE NEW PART ---
+        # We generate the ID and pass it as 'initial' data
+        new_invoice_id = generate_invoice_id()
+        
+        # We pass initial={'field_name': value}
+        form = ReceiptForm(initial={'invoice_number': new_invoice_id})
+        
         passenger_formset = PassengerFormSet()
         item_formset = ItemFormSet()
 
@@ -34,7 +55,6 @@ def receipt_create(request):
         'item_formset': item_formset,
     }
     return render(request, 'receipt_form.html', context)
-
 # ... keep your existing receipt_detail view below ...
 @login_required
 def receipt_detail(request, pk):
