@@ -1,0 +1,116 @@
+{% load static %}
+{% load humanize %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt #{{ receipt.invoice_number }}</title>
+    <link rel="stylesheet" href="{% static 'css/receipt.css' %}">
+</head>
+<body>
+
+    <div style="text-align: center; margin-bottom: 20px;" class="no-print">
+      <a href="{% url 'receipt_list' %}" style="text-decoration: none; color: #666; margin-right: 20px;">&larr; Back to Dashboard</a>
+      
+      <a href="{% url 'receipt_pdf' receipt.pk %}" target="_blank" 
+         style="background-color: #0f172a; color: white; padding: 10px 20px; text-decoration: none; font-weight: bold; border-radius: 5px;">
+         Download / Print PDF 
+      </a>
+  </div>
+
+  <div class="page">
+
+        <div class="header">
+            <img src="{% static 'img/logo.png' %}" alt="Logo" class="header-logo">
+            <h1>DOHA TRAVELLING AND TOUR L.T.D</h1>
+            <p>Suite F5 First Floor Albino Atrium Mall, Utako District, Abuja</p>
+        </div>
+
+        <div class="top-bar">
+            <div class="client-name">
+                CLIENT NAME: {{ receipt.client_name|upper }}
+            </div>
+            <div class="invoice-number">
+                Invoice: {{ receipt.invoice_number }}
+            </div>
+        </div>
+
+        <div class="invoice-meta">
+            <p>Invoice Date: {{ receipt.invoice_date|date:"jS F, Y" }}</p>
+            <p>To: {{ receipt.invoice_to }}</p>
+            <p>Status: <strong>{{ receipt.status }}</strong></p>
+        </div>
+
+        <div class="section-title">PASSENGER</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">S/N</th>
+                    <th>FULL NAME</th>
+                    <th>DATE OF BIRTH</th>
+                    <th>PASSPORT NUMBER</th>
+                    <th>GENDER</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for passenger in receipt.passengers.all %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ passenger.full_name|upper }}</td>
+                    <td>{{ passenger.dob|date:"d/m/Y" }}</td>
+                    <td>{{ passenger.passport_number }}</td>
+                    <td>{{ passenger.gender }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="section-title">ITEMS</div>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width: 50px;">S/N</th>
+                    <th>DESCRIPTION</th>
+                    <th>QUANTITY</th>
+                    <th>PRICE (₦)</th>
+                    <th>TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in receipt.items.all %}
+                <tr>
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ item.description|upper }}</td>
+                    <td>{{ item.quantity }} {{ item.quantity_unit|upper }}</td>
+                    <td>{{ item.unit_price|intcomma }}</td>
+                    <td>{{ item.total_price|intcomma }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="total-container">
+            <div class="total-box">
+                <div class="label" style="text-align: right; padding-right: 15px;">TOTAL AMOUNT</div>
+                <div class="value">₦{{ receipt.total_amount|intcomma }}</div>
+            </div>
+        </div>
+
+        <div class="footer-info">
+            <p>PAID: ₦{% if receipt.status == 'PAID' %}{{ receipt.total_amount|intcomma }}{% else %}0.00{% endif %}</p>
+            <p>AMOUNT DUE: {% if receipt.status == 'PAID' %}NIL{% else %}₦{{ receipt.total_amount|intcomma }}{% endif %}</p>
+            
+            {% if receipt.departure_date %}
+            <p>DEPARTURE DATE: {{ receipt.departure_date|date:"d/m/Y" }}</p>
+            {% endif %}
+            
+            {% if receipt.return_date %}
+            <p>RETURN DATE: {{ receipt.return_date|date:"d/m/Y" }}</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Create Receipt</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <style>
+        /* Specific styles for the form layout */
+        .container { max-width: 900px; margin: 40px auto; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .section-header { border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin: 30px 0 15px 0; display: flex; justify-content: space-between; align-items: center; }
+        .row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; }
+        .col { flex: 1; min-width: 200px; }
+        .dynamic-form { background: #f8fafc; padding: 15px; margin-bottom: 10px; border-radius: 6px; border: 1px solid #e2e8f0; position: relative; }
+        .btn-add { background: #10b981; color: white; padding: 8px 15px; border-radius: 4px; text-decoration: none; font-size: 0.9rem; cursor: pointer; border: none; }
+        .btn-save { background: #0f172a; color: white; padding: 12px 30px; font-size: 1rem; border-radius: 6px; cursor: pointer; border: none; margin-top: 20px; width: 100%; }
+        .delete-checkbox { position: absolute; top: 10px; right: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Create New Receipt</h2>
+        
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="section-header">
+                <h3>Receipt Details</h3>
+            </div>
+            <div class="row">
+                <div class="col">{{ form.invoice_number.label_tag }} {{ form.invoice_number }}</div>
+                <div class="col">{{ form.invoice_date.label_tag }} {{ form.invoice_date }}</div>
+            </div>
+            <div class="row">
+                <div class="col">{{ form.client_name.label_tag }} {{ form.client_name }}</div>
+                <div class="col">{{ form.invoice_to.label_tag }} {{ form.invoice_to }}</div>
+            </div>
+            <div class="row">
+                <div class="col">{{ form.status.label_tag }} {{ form.status }}</div>
+                <div class="col">{{ form.departure_date.label_tag }} {{ form.departure_date }}</div>
+                <div class="col">{{ form.return_date.label_tag }} {{ form.return_date }}</div>
+            </div>
+
+            <div class="section-header">
+                <h3>Passengers</h3>
+                <button type="button" class="btn-add" id="add-passenger"> + Add Passenger</button>
+            </div>
+            
+            {{ passenger_formset.management_form }}
+            <div id="passenger-list">
+                {% for form in passenger_formset %}
+                <div class="dynamic-form passenger-form">
+                    {{ form.id }}
+                    <div class="row">
+                        <div class="col">Name: {{ form.full_name }}</div>
+                        <div class="col">DOB: {{ form.dob }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col">Passport: {{ form.passport_number }}</div>
+                        <div class="col">Gender: {{ form.gender }}</div>
+                    </div>
+                    {% if passenger_formset.can_delete %}
+                        <div class="delete-checkbox">Delete? {{ form.DELETE }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="section-header">
+                <h3>Items</h3>
+                <button type="button" class="btn-add" id="add-item"> + Add Item</button>
+            </div>
+
+            {{ item_formset.management_form }}
+            <div id="item-list">
+                {% for form in item_formset %}
+                <div class="dynamic-form item-form">
+                    {{ form.id }}
+                    <div class="row">
+                        <div class="col" style="flex: 2;">Desc: {{ form.description }}</div>
+                        <div class="col">Qty: {{ form.quantity }}</div>
+                    </div>
+                    <div class="row">
+                        <div class="col">Unit: {{ form.quantity_unit }}</div>
+                        <div class="col">Price: {{ form.unit_price }}</div>
+                    </div>
+                    {% if item_formset.can_delete %}
+                        <div class="delete-checkbox">Delete? {{ form.DELETE }}</div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="btn-save">Save & Generate Receipt</button>
+        </form>
+    </div>
+</div>
+
+<div id="empty-passenger" style="display:none">
+    <div class="dynamic-form passenger-form">
+        <div class="row">
+            <div class="col">Name: {{ passenger_formset.empty_form.full_name }}</div>
+            <div class="col">DOB: {{ passenger_formset.empty_form.dob }}</div>
+        </div>
+        <div class="row">
+            <div class="col">Passport: {{ passenger_formset.empty_form.passport_number }}</div>
+            <div class="col">Gender: {{ passenger_formset.empty_form.gender }}</div>
+        </div>
+        <div class="delete-checkbox">Delete? {{ passenger_formset.empty_form.DELETE }}</div>
+    </div>
+</div>
+
+<div id="empty-item" style="display:none">
+    <div class="dynamic-form item-form">
+        <div class="row">
+            <div class="col" style="flex: 2;">Desc: {{ item_formset.empty_form.description }}</div>
+            <div class="col">Qty: {{ item_formset.empty_form.quantity }}</div>
+        </div>
+        <div class="row">
+            <div class="col">Unit: {{ item_formset.empty_form.quantity_unit }}</div>
+            <div class="col">Price: {{ item_formset.empty_form.unit_price }}</div>
+        </div>
+        <div class="delete-checkbox">Delete? {{ item_formset.empty_form.DELETE }}</div>
+    </div>
+</div>
+
+<script>
+    // Helper function to add new forms
+    function addForm(type) {
+        const totalForms = document.getElementById(`id_${type}-TOTAL_FORMS`);
+        const currentCount = parseInt(totalForms.value);
+        
+        const emptyFormHtml = document.getElementById(`empty-${type.replace(/s$/, '')}`).innerHTML; // remove 's' logic simplistic
+        // Actually, let's map type:
+        // passengers -> passenger
+        // items -> item
+        const mapping = { 'passengers': 'passenger', 'items': 'item' };
+        const singular = mapping[type];
+        const emptyFormContent = document.getElementById(`empty-${singular}`).innerHTML;
+
+        // Replace __prefix__ with current count
+        const newFormHtml = emptyFormContent.replace(/__prefix__/g, currentCount);
+
+        // Append to list
+        const listDiv = document.getElementById(`${singular}-list`);
+        const newDiv = document.createElement('div');
+        newDiv.innerHTML = newFormHtml;
+        listDiv.appendChild(newDiv);
+
+        // Update total count
+        totalForms.value = currentCount + 1;
+    }
+
+    document.getElementById('add-passenger').addEventListener('click', () => addForm('passengers'));
+    document.getElementById('add-item').addEventListener('click', () => addForm('items'));
+</script>
+
+</body>
+</html>

@@ -1,0 +1,201 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm;
+        }
+        
+        body {
+            /* Standard font stack - 100% safe */
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 12px;
+            color: #000000;
+        }
+
+        /* HEADER */
+        .header-table { width: 100%; margin-bottom: 20px; }
+        .header-table td { text-align: center; }
+        .company-name { font-size: 16px; font-weight: bold; text-transform: uppercase; }
+        .company-address { font-size: 12px; margin-top: 5px; }
+
+        /* INFO SECTION */
+        .info-table { 
+            width: 100%; 
+            border-bottom: 1px solid #000; 
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .client-cell { font-weight: bold; text-transform: uppercase; font-size: 14px; text-align: left; }
+        .invoice-cell { font-weight: bold; text-align: right; }
+
+        /* META DATA */
+        .meta-table { width: 100%; margin-bottom: 30px; }
+        .meta-table td { text-align: right; padding: 1px; }
+
+        /* DATA TABLES */
+        .section-title {
+            font-weight: bold;
+            text-decoration: underline;
+            margin-top: 20px;
+            margin-bottom: 5px;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table th {
+            border: 1px solid #000000;
+            padding: 2px 4px; 
+            font-weight: bold;
+            text-align: left;
+            background-color: #ffffff;
+            font-size: 11px;
+        }
+        .data-table td {
+            border: 1px solid #000000;
+            padding: 1px 4px; 
+            text-align: left;
+            font-size: 11px;
+            vertical-align: middle;
+        }
+
+        /* TOTAL BOX */
+        .total-table { 
+            width: 50%; 
+            margin-left: auto; 
+            border: 1px solid #000000;
+            border-top: none; 
+        }
+        
+        /* CURRENCY STYLE */
+        .currency-code {
+            font-size: 10px; /* Slightly smaller to fit nicely */
+            color: #333;
+            margin-right: 2px;
+        }
+
+        /* FOOTER */
+        .footer { margin-top: 30px; font-weight: bold; line-height: 1.5; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <table class="header-table">
+        <tr>
+            <td>
+                <div class="company-name">DOHA TRAVELLING AND TOUR L.T.D</div>
+                <div class="company-address">Suite F5 First Floor Albino Atrium Mall, Utako District, Abuja</div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="info-table">
+        <tr>
+            <td class="client-cell">CLIENT NAME: {{ receipt.client_name|upper }}</td>
+            <td class="invoice-cell">Invoice: {{ receipt.invoice_number }}</td>
+        </tr>
+    </table>
+
+    <table class="meta-table">
+        <tr><td>Invoice Date: {{ receipt.invoice_date|date:"jS F, Y" }}</td></tr>
+        <tr><td>To: {{ receipt.invoice_to }}</td></tr>
+        <tr><td>Status: {{ receipt.status }}</td></tr>
+    </table>
+
+    <div class="section-title">PASSENGER</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th width="8%">S/N</th>
+                <th width="37%">FULL NAME</th>
+                <th width="20%">DATE OF BIRTH</th>
+                <th width="20%">PASSPORT NUMBER</th>
+                <th width="15%">GENDER</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for passenger in receipt.passengers.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ passenger.full_name|upper }}</td>
+                <td>{{ passenger.dob|date:"d/m/Y" }}</td>
+                <td>{{ passenger.passport_number }}</td>
+                <td>{{ passenger.gender }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="section-title">ITEMS</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th width="8%">S/N</th>
+                <th width="42%">DESCRIPTION</th>
+                <th width="15%">QUANTITY</th>
+                <th width="15%">PRICE (NGN)</th>
+                <th width="20%">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in receipt.items.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.description|upper }}</td>
+                <td>{{ item.quantity }} {{ item.quantity_unit|upper }}</td>
+                
+                <td><span class="currency-code">NGN</span> {{ item.unit_price|intcomma }}</td>
+                <td><span class="currency-code">NGN</span> {{ item.total_price|intcomma }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <table align="right" style="width: 50%; border: 1px solid black; border-top: none; border-collapse: collapse;">
+        <tr>
+            <td style="text-align: right; font-weight: bold; border-right: 1px solid black; padding: 4px;">TOTAL AMOUNT</td>
+            <td style="text-align: left; font-weight: bold; padding: 4px; width: 120px;">
+                <span class="currency-code">NGN</span> {{ receipt.total_amount|intcomma }}
+            </td>
+        </tr>
+    </table>
+
+    <div style="clear: both;"></div>
+
+    <div class="footer">
+        <div>
+            PAID: 
+            {% if receipt.status == 'PAID' %}
+                <span class="currency-code">NGN</span> {{ receipt.total_amount|intcomma }}
+            {% else %}
+                <span class="currency-code">NGN</span> 0.00
+            {% endif %}
+        </div>
+        <div>
+            AMOUNT DUE: 
+            {% if receipt.status == 'PAID' %}
+                NIL
+            {% else %}
+                <span class="currency-code">NGN</span> {{ receipt.total_amount|intcomma }}
+            {% endif %}
+        </div>
+        
+        {% if receipt.departure_date %}
+        <div>DEPARTURE DATE: {{ receipt.departure_date|date:"d/m/Y" }}</div>
+        {% endif %}
+        
+        {% if receipt.return_date %}
+        <div>RETURN DATE: {{ receipt.return_date|date:"d/m/Y" }}</div>
+        {% endif %}
+    </div>
+
+</body>
+</html>
