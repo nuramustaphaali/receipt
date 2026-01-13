@@ -1,2 +1,4 @@
+reportlab
 xhtml2pdf
 django
+psycopg2-binary
