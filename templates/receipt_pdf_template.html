@@ -86,7 +86,16 @@
         .currency-code { font-size: 10px; color: #333; margin-right: 2px; }
 
         /* FOOTER */
-        .footer { margin-top: 30px; font-weight: bold; line-height: 1.5; font-size: 12px; }
+        .footer { 
+            margin-top: 30px; 
+            font-weight: bold; 
+            font-size: 12px; 
+            line-height: 1; /* Reduced from 1.5 to 1.2 */
+        }
+        
+        .footer div {
+            margin-bottom: 2px; /* Adds small, controlled space between lines */
+        }
     </style>
 </head>
 <body>
@@ -195,7 +204,7 @@
         </div>
         
         {% if receipt.departure_date %}
-        <div>DEPARTURE DATE: {{ receipt.departure_date|date:"d/m/Y" }}</div>
+        <div style="margin-top: 10px;">DEPARTURE DATE: {{ receipt.departure_date|date:"d/m/Y" }}</div>
         {% endif %}
         
         {% if receipt.return_date %}
