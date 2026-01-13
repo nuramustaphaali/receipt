@@ -85,12 +85,39 @@ def link_callback(uri, rel):
             raise Exception('media URI must start with %s or %s' % (sUrl, mUrl))
     return path
 
+import os
+import base64
+from django.conf import settings
+from django.contrib.staticfiles import finders
+from django.http import HttpResponse
+from django.template.loader import get_template
+from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from xhtml2pdf import pisa
+from .models import Receipt
+
 @login_required
 def receipt_pdf(request, pk):
     receipt = get_object_or_404(Receipt, pk=pk)
     
-    # We don't need font_path or base64 anymore.
-    context = {'receipt': receipt}
+    # --- LOGO MAGIC ---
+    # 1. Find the logo file
+    logo_path = finders.find('img/logo.png')
+    logo_data = None
+    
+    # 2. Convert it to a Base64 string
+    if logo_path:
+        try:
+            with open(logo_path, "rb") as image_file:
+                logo_data = base64.b64encode(image_file.read()).decode('utf-8')
+        except Exception as e:
+            print(f"Error loading logo: {e}")
+
+    # 3. Pass it to the template
+    context = {
+        'receipt': receipt,
+        'logo_data': logo_data, 
+    }
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'inline; filename="Receipt_{receipt.invoice_number}.pdf"'
@@ -98,9 +125,8 @@ def receipt_pdf(request, pk):
     template = get_template('receipt_pdf_template.html')
     html = template.render(context)
 
-    pisa_status = pisa.CreatePDF(
-       html, dest=response, link_callback=link_callback
-    )
+    # Note: We removed link_callback because we are embedding the image directly
+    pisa_status = pisa.CreatePDF(html, dest=response)
 
     if pisa_status.err:
        return HttpResponse('We had some errors <pre>' + html + '</pre>')
